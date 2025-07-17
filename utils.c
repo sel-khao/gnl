@@ -17,8 +17,8 @@ void	ft_usleep(long long ms)
 	long long	start;
 
 	start = get_time();
-	while ((get_time() - start) <= ms)
-		asm volatile ("pause");
+	while ((get_time() - start) < ms)
+		usleep(50);
 }
 
 long	ft_atoi(const char *str)
@@ -49,9 +49,14 @@ long	ft_atoi(const char *str)
 
 void	put_dead(t_content *curr, int i)
 {
+	size_t	time;
+
+	pthread_mutex_lock(&curr->death_lock);
+	curr->death = 1;
+	pthread_mutex_unlock(&curr->death_lock);
 	pthread_mutex_lock(&curr->print);
-	put_time(*curr);
-	printf("lfilasof %i mat layr7mo\n", i);
+	time = get_time() - curr->start;
+	printf("%lu the philosophers %i died\n", time, i);
 	pthread_mutex_unlock(&curr->print);
 }
 
@@ -65,13 +70,18 @@ void	put_time(t_content curr)
 
 void	put_message(char *s, t_pstats *p)
 {
+	size_t	time;
+
 	pthread_mutex_lock(&p->in->print);
 	pthread_mutex_lock(&p->in->death_lock);
-	if (p->in->death == 0)
+	if (p->in->death == 1)
 	{
-		put_time(*p->in);
-		printf("the philosopher %d %s", p->id, s);
+		pthread_mutex_unlock(&p->in->death_lock);
+		pthread_mutex_unlock(&p->in->print);
+		return ;
 	}
+	time = (get_time() - p->in->start);
+	printf("%lu the philosopher %d %s", time, p->id, s);
 	pthread_mutex_unlock(&p->in->death_lock);
 	pthread_mutex_unlock(&p->in->print);
 }

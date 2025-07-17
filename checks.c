@@ -15,34 +15,33 @@
 int	check_full(t_pstats *p, t_content *curr)
 {
 	int	i;
-	int count;
+	int	count;
+	int	nphilos;
 
+	pthread_mutex_lock(&curr->death_lock);
 	count = 0;
 	i = 0;
-	while (i < curr->nphilos)
+	nphilos = curr->nphilos;
+	pthread_mutex_unlock(&curr->death_lock);
+	while (i < nphilos)
 	{
 		pthread_mutex_lock(p[i].meal_lock);
 		if (p[i].full == 1)
-		{
 			count++;
-			p[i].full = 0;
-		}
 		pthread_mutex_unlock(p[i].meal_lock);
 		i++;
 	}
 	pthread_mutex_lock(&curr->death_lock);
-	curr->full += count;
-	if (curr->full >= curr->nphilos)
+	curr->full = count;
+	if (curr->full >= nphilos)
 	{
 		curr->death = 1;
-		pthread_mutex_unlock(&curr->death_lock);
-		return (1);
+		return (pthread_mutex_unlock(&curr->death_lock), 1);
 	}
-	pthread_mutex_unlock(&curr->death_lock);
-	return (0);
+	return (pthread_mutex_unlock(&curr->death_lock), 0);
 }
 
-int	check_args(int ac, char *av[])
+int	check_args(int ac, char **av)
 {
 	int		i;
 	long	nb;
@@ -112,4 +111,3 @@ void	error(int code)
 		exit(1);
 	}
 }
-
